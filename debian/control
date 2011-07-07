@@ -11,12 +11,12 @@ Build-Depends: devscripts (>= 2.10.7~),
  debhelper (>= 7.0.1),
  dh-buildinfo,
  python,
- libev-dev (>= 4.0),
- libv8-dev (>= 3.1.8.22),
- scons (>= 1.2.0),
- libc-ares-dev (>= 1.7.3),
+ libev-dev,
+ libv8-dev,
+ scons,
+ libc-ares-dev,
  binutils,
- libssl-dev (>= 0.9.8),
+ libssl-dev,
  pkg-config,
  bash-completion,
  curl
@@ -31,10 +31,10 @@ Architecture: any
 Depends: nodejs (= ${binary:Version}),
  ${misc:Depends},
  python,
- libev-dev (>= 4.0),
- libv8-dev (>= 3.1.8.22),
- libc-ares-dev (>= 1.7.3),
- libssl-dev (>= 0.9.8)
+ libev-dev,
+ libv8-dev,
+ libc-ares-dev,
+ libssl-dev
 Description: Development files for Node.js
  Node.js provides an event-based server-side javascript engine.
  .
