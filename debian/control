@@ -19,6 +19,7 @@ Build-Depends: devscripts (>= 2.10.7~),
  libssl-dev,
  pkg-config,
  bash-completion,
+ quilt,
  curl
 Standards-Version: 3.9.2
 Homepage: http://nodejs.org/
