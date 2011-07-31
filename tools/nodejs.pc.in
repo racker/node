@@ -1,7 +1,7 @@
 version=@VERSION@
 prefix=@PREFIX@
-libdir=${prefix}/lib
-includedir=${prefix}/include/node
+libdir=${prefix}/lib/nodejs
+includedir=@PREFIX@/include/nodejs
 
 Name: nodejs
 Description: Evented I/O for V8 JavaScript.
