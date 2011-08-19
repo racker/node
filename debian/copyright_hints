@@ -570,6 +570,7 @@ Files: AUTHORS
  debian/nodejs.postinst
  debian/nodejs.prerm
  debian/patches/1001_no_ssl_v2.patch
+ debian/patches/1006_version.patch
  debian/patches/2001_FHS_paths_for_nodejs.patch
  debian/patches/2002_build_without_libv8_debug.patch
  debian/patches/2004_libev_compatibility.patch
@@ -751,7 +752,7 @@ Files: AUTHORS
  doc/api/path.markdown
  doc/api/process.markdown
  doc/api/querystring.markdown
- doc/api/readline.md
+ doc/api/readline.markdown
  doc/api/repl.markdown
  doc/api/stdio.markdown
  doc/api/streams.markdown
@@ -767,10 +768,12 @@ Files: AUTHORS
  doc/api_assets/style.css
  doc/cla.html
  doc/favicon.ico
+ doc/logo.png
  doc/node.1
  doc/pipe.css
  doc/sh_javascript.min.js
  doc/sh_vim-dark.css
+ doc/sponsored.png
  doc/template.html
  doc/v0.4_announcement.html
  test/CMakeLists.txt
@@ -870,6 +873,7 @@ Files: AUTHORS
  test/simple/test-http-response-readable.js
  test/simple/test-regress-GH-784.js
  test/simple/test-regress-GH-819.js
+ test/simple/test-regress-GH-877.js
  test/simple/test-regress-GH-897.js
  test/simple/test-stream-pipe-multi.js
  test/simple/test-vm-create-context-circular-reference.js
@@ -1220,6 +1224,7 @@ Files: lib/_debugger.js
  test/simple/test-http-cat.js
  test/simple/test-http-chunked.js
  test/simple/test-http-client-abort.js
+ test/simple/test-http-client-abort2.js
  test/simple/test-http-client-parse-error.js
  test/simple/test-http-client-race-2.js
  test/simple/test-http-client-race.js
@@ -1228,6 +1233,7 @@ Files: lib/_debugger.js
  test/simple/test-http-contentLength0.js
  test/simple/test-http-curl-chunk-problem.js
  test/simple/test-http-default-encoding.js
+ test/simple/test-http-dns-error.js
  test/simple/test-http-dns-fail.js
  test/simple/test-http-eof-on-connect.js
  test/simple/test-http-exceptions.js
@@ -1236,6 +1242,7 @@ Files: lib/_debugger.js
  test/simple/test-http-full-response.js
  test/simple/test-http-get-pipeline-problem.js
  test/simple/test-http-head-request.js
+ test/simple/test-http-head-response-has-no-body-end.js
  test/simple/test-http-head-response-has-no-body.js
  test/simple/test-http-host-headers.js
  test/simple/test-http-keep-alive-close-on-header.js
@@ -1246,6 +1253,7 @@ Files: lib/_debugger.js
  test/simple/test-http-parser.js
  test/simple/test-http-proxy.js
  test/simple/test-http-request-aborted.js
+ test/simple/test-http-request-end-twice.js
  test/simple/test-http-request-end.js
  test/simple/test-http-response-close.js
  test/simple/test-http-server-multiheaders.js
@@ -1253,6 +1261,7 @@ Files: lib/_debugger.js
  test/simple/test-http-set-cookies.js
  test/simple/test-http-set-timeout.js
  test/simple/test-http-set-trailers.js
+ test/simple/test-http-status-code.js
  test/simple/test-http-upgrade-agent.js
  test/simple/test-http-upgrade-client.js
  test/simple/test-http-upgrade-client2.js
@@ -1329,6 +1338,7 @@ Files: lib/_debugger.js
  test/simple/test-sync-fileread.js
  test/simple/test-sys.js
  test/simple/test-timers-linked-list.js
+ test/simple/test-tls-client-abort.js
  test/simple/test-tls-client-verify.js
  test/simple/test-tls-ext-key-usage.js
  test/simple/test-tls-junk-closes-server.js
@@ -2007,13 +2017,6 @@ Copyright: 2003-2005, Tom Wu
 License: MIT/X11 (BSD like)
  FIXME
 
-Files: doc/trademark-policy.pdf
-Copyright: ÃGša‘`2NÂNÒUxL$C£ò¤' ÌªwèQ[ÌzÊ‚d‘mª-ä<gÕOikéÄ€‰@3æDÅÔÔ@ò¥aEdÅ’S9å&êPÕ®öUN{hè(!jp¿¿Ç“Ïµhûý± ?wû—çÉ91"äÈ9èƒ0£ZƒåÉªPó$æÝ¶Þd¿º&¹F5F,Þdy¦6$²ù´%Ï†Ì	Ë°jËÆ-ÇØJÍ+#_
- ºBî_ÜÞ¾¸ÿ›çÛ[.¿tZy¼‚r‚àq…5ÊÓTzM;Ð-·÷ZO6ÞØñõ+fTtTVš§N²ÙÊbŽik
- ðÄà8%ÇS¬ˆ%w–5²µkº!@ ´,@¢XÕÚÅš_v
-License: UNKNOWN
- FIXME
-
 Files: deps/v8/benchmarks/v8-logo.png
 Copyright: í$9‡½ 1¨uîºº¶•ˆìœÚè’³Ôa×þ<mÛÒ¸ÛÑ8î„¢ÚºöØPŽH}m@[¼s~8D<lRv´ò®å8yvCO[ÈwŒ‘&rõ¸ï‡7rbÿDÍ
  æÐ_Çñ-8CÅXçy¦žÇ-G™üâìB³ß çöÞ¡qÌ^;(Œ°ÂÔÆ0ÒnÉŒ’ªÎ6ÆPâ\×äš5{“;BGòg91dø¹ö{Ù+GD+aÈ®í~-
@@ -2080,18 +2083,8 @@ Copyright: 2001-2008, The SCons Foundation
 License: UNKNOWN
  FIXME
 
-Files: doc/logo.png
-Copyright: TÊ±‘äZÌ‚hRªnÒÂÆ/Ay-þE7Ž þŒjãkˆ¯òíU>Ïóð/˜áGÀ­5Ü$¾J[‹TJH®ëÒ”hgËÆÒ{ü	L³¡»qÜ„ÄMS18¦çðë7´aÛ37zž‡m{X–ÁêµÍt¯i"•²É24bt4K&•'“qp·¸›R†šÎ—SØ8¯ÓÇeˆ½ðžB"VïFL€{8Ù÷“ÑGÒÏ‰kdBú8Õ±éïÓìïÇ½Og›½ÊG“ÏÓÚ„T+xÚŒâ—Il“×öumþR›(6Wñ—ûøÌ>YÃ5òð}Ä”^Ó9ð<×µYØ«5ù? ñ·ìyjˆeËc´´FLJ¥Ä‹YÄã!ºW7á8étžlÆf<™c|,ÇÄDžtÚ&—µÉf\×›Tû•ÂPLçÛjC*Ñì@ü‘ _ÒõbOµ&®Q	éIÄ‘ZAü¸÷éÊùÙ^úëÌÃÆîîÕZäsh=ä€/×ð|Ià3Tà„
-License: UNKNOWN
- FIXME
-
 Files: test/fixtures/person.jpg
 Copyright: uzŽ3@‡VnyÊÀIå'Dÿ â:‚óÌ[eºÇh£¶ÿ àðÄÔitI&JH,¥ØîË÷¾XàŠyZÜ D ˜Ü­…0ºz¢Ï5m¿XÝê¤‡Ž™ôèR’ŠysÉçìMÈcu)æFßI<ú–ÄÇñì*ZÂÕeð¹%ÊHf½UÐÚÍ@‚Z×·ËÐ“åÆ
-License: UNKNOWN
- FIXME
-
-Files: doc/sponsored.png
-Copyright: Ô–«UªPëSSg;¨‡ªg¨oT?¤~Yý‰YÃLÃOC¤Q ±_ã¼Æ c³x,!k«†u5Ä&±ÍÙ|v*»˜ý»‹=ª¡9C3J3W³Ró”f?ã˜qøœtN	ç(§—ó~ŠÞï)â)¦4L¹1e\kª–—–X«H«Q«Gë½6®í§¦½E»YûAÇJ'\'GgÎçSÙSÝ§
 License: UNKNOWN
  FIXME
 

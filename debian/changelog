@@ -1,6 +1,16 @@
-nodejs (0.4.10-1) unstable; urgency=low
+nodejs (0.4.11-1) unstable; urgency=low
 
   * New upstream release
+  * debian/gbp.conf: Filter out doc/logos, unused, too big, and
+    upstream removed it from 0.5 tarballs.
+  * debian/patches/1006_version.patch : upstream forgot to update
+    VERSION flag in wscript.
+
+ -- Jérémy Lal <kapouer@melix.org>  Thu, 18 Aug 2011 15:09:01 +0200
+
+nodejs (0.4.10-1) unstable; urgency=low
+
+  * New upstream release 
 
  -- Jérémy Lal <kapouer@melix.org>  Wed, 20 Jul 2011 20:50:07 +0200
 
