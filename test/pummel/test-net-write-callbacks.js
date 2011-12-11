@@ -19,38 +19,38 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+var common = require('../common');
+var net = require('net');
+var assert = require('assert');
 
-#include "node_config.h"
+var cbcount = 0;
+var N = 500000;
 
-#ifndef NODE_VERSION_H
-#define NODE_VERSION_H
+var server = net.Server(function(socket) {
+  socket.on('data', function(d) {
+    console.error("got %d bytes", d.length);
+  });
 
-#define NODE_MAJOR_VERSION 0
-#define NODE_MINOR_VERSION 4
-#define NODE_PATCH_VERSION 13
-#define NODE_VERSION_IS_RELEASE 0
+  socket.on('end', function() {
+    console.error("end");
+    socket.destroy();
+    server.close();
+  });
+});
 
-#ifndef NODE_STRINGIFY
-#define NODE_STRINGIFY(n) NODE_STRINGIFY_HELPER(n)
-#define NODE_STRINGIFY_HELPER(n) #n
-#endif
+server.listen(common.PORT, function() {
+  var client = net.createConnection(common.PORT);
 
-#if NODE_VERSION_IS_RELEASE
-# define NODE_VERSION_STRING  NODE_STRINGIFY(NODE_MAJOR_VERSION) "." \
-                              NODE_STRINGIFY(NODE_MINOR_VERSION) "." \
-                              NODE_STRINGIFY(NODE_PATCH_VERSION)
-#else
-# define NODE_VERSION_STRING  NODE_STRINGIFY(NODE_MAJOR_VERSION) "." \
-                              NODE_STRINGIFY(NODE_MINOR_VERSION) "." \
-                              NODE_STRINGIFY(NODE_PATCH_VERSION) "-pre"
-#endif
+  client.on('connect', function() {
+    for (var i = 0; i < N; i++) {
+      client.write("hello world", function() {
+        cbcount++;
+      });
+    }
+    client.end();
+  });
+});
 
-#define NODE_VERSION "v" NODE_VERSION_STRING
-
-
-#define NODE_VERSION_AT_LEAST(major, minor, patch) \
-  (( (major) < NODE_MAJOR_VERSION) \
-  || ((major) == NODE_MAJOR_VERSION && (minor) < NODE_MINOR_VERSION) \
-  || ((major) == NODE_MAJOR_VERSION && (minor) == NODE_MINOR_VERSION && (patch) <= NODE_PATCH_VERSION))
-
-#endif /* NODE_VERSION_H */
+process.on('exit', function() {
+  assert.equal(N, cbcount);
+});

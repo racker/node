@@ -553,3 +553,35 @@ assert.equal(written, 9);
 written = buf.write('あいう\0'); // 3bytes * 3 + 1byte
 assert.equal(written, 10);
 
+// test for buffer overrun
+buf = new Buffer([0, 0, 0, 0, 0]); // length: 5
+var sub = buf.slice(0, 4);         // length: 4
+written = sub.write('12345', 'binary');
+assert.equal(written, 4);
+assert.equal(buf[4], 0);
+
+// test for _charsWritten
+buf = new Buffer(9);
+buf.write('あいうえ', 'utf8'); // 3bytes * 4
+assert.equal(Buffer._charsWritten, 3);
+buf.write('あいうえお', 'ucs2'); // 2bytes * 5
+assert.equal(Buffer._charsWritten, 4);
+buf.write('0123456789', 'ascii');
+assert.equal(Buffer._charsWritten, 9);
+buf.write('0123456789', 'binary');
+assert.equal(Buffer._charsWritten, 9);
+buf.write('123456', 'base64');
+assert.equal(Buffer._charsWritten, 6);
+
+// Check for fractional length args, junk length args, etc.
+// https://github.com/joyent/node/issues/1758
+Buffer(3.3).toString(); // throws bad argument error in commit 43cb4ec
+assert.equal(Buffer(-1).length, 0);
+assert.equal(Buffer(NaN).length, 0);
+assert.equal(Buffer(3.3).length, 4);
+assert.equal(Buffer({length:3.3}).length, 4);
+assert.equal(Buffer({length:"BAM"}).length, 0);
+
+// Make sure that strings are not coerced to numbers.
+assert.equal(Buffer("99").length, 2);
+assert.equal(Buffer("13.37").length, 5);
