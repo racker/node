@@ -53,8 +53,12 @@ var server = http.createServer(function (req, res) {
 
   } else if (command == "fixed") {
     body = fixed;
-
-  } else {
+  } else if (command == "echo") {
+     res.writeHead(200, { "Content-Type": "text/plain",
+                          "Transfer-Encoding": "chunked" });
+     req.pipe(res);
+     return; 
+  else {
     status = 404;
     body = "not found\n";
   }
