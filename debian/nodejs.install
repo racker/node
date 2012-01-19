@@ -1,1 +1,3 @@
 debian/tmp/usr/bin/node
+debian/tmp/usr/bin/npm
+debian/tmp/usr/lib/node_modules/npm/ 
