@@ -115,7 +115,8 @@ typedef intptr_t ssize_t;
   XX( 45, EAISOCKTYPE, "") \
   XX( 46, ESHUTDOWN, "") \
   XX( 47, EEXIST, "file already exists") \
-  XX( 48, ESRCH, "no such process")
+  XX( 48, ESRCH, "no such process") \
+  XX( 49, EPERM, "operation not permitted")
 
 
 #define UV_ERRNO_GEN(val, name, s) UV_##name = val,
