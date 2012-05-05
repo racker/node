@@ -208,6 +208,7 @@
             ],
           },
           'defines': [
+            '_DARWIN_USE_64_BIT_INODE=1',
             'EV_CONFIG_H="config_darwin.h"',
             'EIO_CONFIG_H="config_darwin.h"',
           ]
@@ -299,6 +300,7 @@
         'test/test-pipe-bind-error.c',
         'test/test-pipe-connect-error.c',
         'test/test-ref.c',
+        'test/test-shutdown-close.c',
         'test/test-shutdown-eof.c',
         'test/test-spawn.c',
         'test/test-stdio-over-pipes.c',
@@ -321,6 +323,7 @@
         'test/test-udp-send-and-recv.c',
         'test/test-udp-multicast-join.c',
         'test/test-counters-init.c',
+        'test/test-udp-multicast-ttl.c',
       ],
       'conditions': [
         [ 'OS=="win"', {

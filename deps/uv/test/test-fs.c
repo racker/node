@@ -45,7 +45,7 @@
 # define close _close
 #endif
 
-#define TOO_LONG_NAME_LENGTH 8192
+#define TOO_LONG_NAME_LENGTH 65536
 
 typedef struct {
   const char* path;
@@ -115,7 +115,7 @@ void check_permission(const char* filename, int mode) {
 
   s = req.ptr;
 #ifdef _WIN32
-  /* 
+  /*
    * On Windows, chmod can only modify S_IWUSR (_S_IWRITE) bit,
    * so only testing for the specified flags.
    */
@@ -186,8 +186,14 @@ static void chown_cb(uv_fs_t* req) {
 
 static void chown_root_cb(uv_fs_t* req) {
   ASSERT(req->fs_type == UV_FS_CHOWN);
+#ifdef _WIN32
+  /* On windows, chown is a no-op and always succeeds. */
+  ASSERT(req->result == 0);
+#else
+  /* On unix, chown'ing the root directory is not allowed. */
   ASSERT(req->result == -1);
   ASSERT(req->errorno == UV_EPERM);
+#endif
   chown_cb_count++;
   uv_fs_req_cleanup(req);
 }
@@ -242,6 +248,11 @@ static void read_cb(uv_fs_t* req) {
   read_cb_count++;
   uv_fs_req_cleanup(req);
   if (read_cb_count == 1) {
+    ASSERT(strcmp(buf, test_buf) == 0);
+    memset(buf, 0, sizeof(buf));
+    r = uv_fs_read64(loop, &read_req, open_req1.result, buf, sizeof(buf), 0,
+        read_cb);
+  } else if (read_cb_count == 2) {
     ASSERT(strcmp(buf, test_buf) == 0);
     r = uv_fs_ftruncate(loop, &ftruncate_req, open_req1.result, 7,
         ftruncate_cb);
@@ -313,7 +324,13 @@ static void write_cb(uv_fs_t* req) {
   ASSERT(req->result != -1);
   write_cb_count++;
   uv_fs_req_cleanup(req);
-  r = uv_fs_fdatasync(loop, &fdatasync_req, open_req1.result, fdatasync_cb);
+
+  if (write_cb_count == 1) {
+    r = uv_fs_write64(loop, &write_req, open_req1.result, test_buf, sizeof(test_buf),
+        -1, write_cb);
+  } else {
+    r = uv_fs_fdatasync(loop, &fdatasync_req, open_req1.result, fdatasync_cb);
+  }
 }
 
 
@@ -432,6 +449,14 @@ static void open_nametoolong_cb(uv_fs_t* req) {
   uv_fs_req_cleanup(req);
 }
 
+static void open_loop_cb(uv_fs_t* req) {
+  ASSERT(req->fs_type == UV_FS_OPEN);
+  ASSERT(req->errorno == UV_ELOOP);
+  ASSERT(req->result == -1);
+  open_cb_count++;
+  uv_fs_req_cleanup(req);
+}
+
 
 TEST_IMPL(fs_file_noent) {
   uv_fs_t req;
@@ -479,6 +504,34 @@ TEST_IMPL(fs_file_nametoolong) {
   ASSERT(open_cb_count == 0);
   uv_run(loop);
   ASSERT(open_cb_count == 1);
+
+  return 0;
+}
+
+TEST_IMPL(fs_file_loop) {
+  uv_fs_t req;
+  int r;
+
+  loop = uv_default_loop();
+
+  unlink("test_symlink");
+  uv_fs_symlink(loop, &req, "test_symlink", "test_symlink", 0, NULL);
+  uv_fs_req_cleanup(&req);
+
+  r = uv_fs_open(loop, &req, "test_symlink", O_RDONLY, 0, NULL);
+  ASSERT(r == -1);
+  ASSERT(req.result == -1);
+  ASSERT(uv_last_error(loop).code == UV_ELOOP);
+  uv_fs_req_cleanup(&req);
+
+  r = uv_fs_open(loop, &req, "test_symlink", O_RDONLY, 0, open_loop_cb);
+  ASSERT(r == 0);
+
+  ASSERT(open_cb_count == 0);
+  uv_run(loop);
+  ASSERT(open_cb_count == 1);
+
+  unlink("test_symlink");
 
   return 0;
 }
@@ -554,7 +607,7 @@ TEST_IMPL(fs_file_async) {
   uv_run(loop);
 
   ASSERT(create_cb_count == 1);
-  ASSERT(write_cb_count == 1);
+  ASSERT(write_cb_count == 2);
   ASSERT(fsync_cb_count == 1);
   ASSERT(fdatasync_cb_count == 1);
   ASSERT(close_cb_count == 1);
@@ -564,7 +617,7 @@ TEST_IMPL(fs_file_async) {
 
   uv_run(loop);
   ASSERT(create_cb_count == 1);
-  ASSERT(write_cb_count == 1);
+  ASSERT(write_cb_count == 2);
   ASSERT(close_cb_count == 1);
   ASSERT(rename_cb_count == 1);
 
@@ -573,11 +626,11 @@ TEST_IMPL(fs_file_async) {
 
   uv_run(loop);
   ASSERT(open_cb_count == 1);
-  ASSERT(read_cb_count == 1);
+  ASSERT(read_cb_count == 2);
   ASSERT(close_cb_count == 2);
   ASSERT(rename_cb_count == 1);
   ASSERT(create_cb_count == 1);
-  ASSERT(write_cb_count == 1);
+  ASSERT(write_cb_count == 2);
   ASSERT(ftruncate_cb_count == 1);
 
   r = uv_fs_open(loop, &open_req1, "test_file2", O_RDONLY, 0, open_cb);
@@ -585,12 +638,12 @@ TEST_IMPL(fs_file_async) {
 
   uv_run(loop);
   ASSERT(open_cb_count == 2);
-  ASSERT(read_cb_count == 2);
+  ASSERT(read_cb_count == 3);
   ASSERT(close_cb_count == 3);
   ASSERT(rename_cb_count == 1);
   ASSERT(unlink_cb_count == 1);
   ASSERT(create_cb_count == 1);
-  ASSERT(write_cb_count == 1);
+  ASSERT(write_cb_count == 2);
   ASSERT(ftruncate_cb_count == 1);
 
   /* Cleanup. */
@@ -633,6 +686,14 @@ TEST_IMPL(fs_file_sync) {
   uv_fs_req_cleanup(&open_req1);
 
   r = uv_fs_read(loop, &read_req, open_req1.result, buf, sizeof(buf), -1,
+      NULL);
+  ASSERT(r != -1);
+  ASSERT(read_req.result != -1);
+  ASSERT(strcmp(buf, test_buf) == 0);
+  uv_fs_req_cleanup(&read_req);
+
+  memset(buf, 0, sizeof(buf));
+  r = uv_fs_read64(loop, &read_req, open_req1.result, buf, sizeof(buf), 0,
       NULL);
   ASSERT(r != -1);
   ASSERT(read_req.result != -1);
@@ -857,7 +918,7 @@ TEST_IMPL(fs_fstat) {
   file = req.result;
   uv_fs_req_cleanup(&req);
 
-  r = uv_fs_write(loop, &req, file, test_buf, sizeof(test_buf), -1, NULL);
+  r = uv_fs_write64(loop, &req, file, test_buf, sizeof(test_buf), -1, NULL);
   ASSERT(r == sizeof(test_buf));
   ASSERT(req.result == sizeof(test_buf));
   uv_fs_req_cleanup(&req);
@@ -1174,7 +1235,7 @@ TEST_IMPL(fs_symlink) {
        */
       return 0;
     } else if (uv_last_error(loop).sys_errno_ == ERROR_PRIVILEGE_NOT_HELD) {
-      /* 
+      /*
        * Creating a symlink is only allowed when running elevated.
        * We pass the test and bail out early if we get ERROR_PRIVILEGE_NOT_HELD.
        */

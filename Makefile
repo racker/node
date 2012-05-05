@@ -32,7 +32,7 @@ install:
 uninstall:
 	@$(WAF) uninstall
 
-test:
+test: all
 	$(PYTHON) tools/test.py --mode=release simple message
 
 test-http1: all
@@ -41,7 +41,16 @@ test-http1: all
 test-valgrind: all
 	$(PYTHON) tools/test.py --mode=release --valgrind simple message
 
-test-all: all
+node_modules/weak:
+	@if [ ! -f node ]; then make all; fi
+	@if [ ! -d node_modules ]; then mkdir -p node_modules; fi
+	./node deps/npm/bin/npm-cli.js install weak \
+		--prefix="$(shell pwd)" --unsafe-perm # go ahead and run as root.
+
+test-gc: all node_modules/weak
+	$(PYTHON) tools/test.py --mode=release gc
+
+test-all: all node_modules/weak
 	$(PYTHON) tools/test.py --mode=debug,release
 	make test-npm
 
@@ -78,11 +87,14 @@ test-npm-publish: all
 out/Release/node: all
 
 apidoc_sources = $(wildcard doc/api/*.markdown)
-apidocs = $(addprefix out/,$(apidoc_sources:.markdown=.html))
+apidocs = $(addprefix out/,$(apidoc_sources:.markdown=.html)) \
+          $(addprefix out/,$(apidoc_sources:.markdown=.json))
 
-apidoc_dirs = out/doc out/doc/api/ out/doc/api/assets out/doc/about out/doc/community out/doc/logos
+apidoc_dirs = out/doc out/doc/api/ out/doc/api/assets out/doc/about out/doc/community out/doc/logos out/doc/images
 
 apiassets = $(subst api_assets,api/assets,$(addprefix out/,$(wildcard doc/api_assets/*)))
+
+doc_images = $(addprefix out/,$(wildcard doc/images/* doc/*.jpg doc/*.png))
 
 website_files = \
 	out/doc/index.html    \
@@ -92,35 +104,15 @@ website_files = \
 	out/doc/sh_javascript.min.js \
 	out/doc/sh_vim-dark.css \
 	out/doc/sh.css \
-	out/doc/logo.png      \
 	out/doc/favicon.ico   \
 	out/doc/pipe.css \
 	out/doc/about/index.html \
-	out/doc/close-downloads.png \
 	out/doc/community/index.html \
-	out/doc/community/not-invented-here.png \
 	out/doc/logos/index.html \
-	out/doc/microsoft-logo.png \
-	out/doc/ryan-speaker.jpg \
-	out/doc/download-logo.png \
-	out/doc/ebay-logo.png \
-	out/doc/footer-logo-alt.png \
-	out/doc/footer-logo.png \
-	out/doc/icons-interior.png \
-	out/doc/icons.png \
-	out/doc/home-icons.png \
-	out/doc/joyent-logo_orange_nodeorg-01.png \
-	out/doc/linkedin-logo.png \
-	out/doc/logo-light.png \
-	out/doc/mac_osx_nodejs_installer_logo.png \
-	out/doc/microsoft-logo.png \
-	out/doc/platform-icons.png \
-	out/doc/sponsored.png \
-	out/doc/twitter-bird.png \
-	out/doc/community-icons.png \
-	out/doc/yahoo-logo.png
+	out/doc/changelog.html \
+	$(doc_images)
 
-doc docs: out/Release/node $(apidoc_dirs) $(website_files) $(apiassets) $(apidocs)
+doc: program $(apidoc_dirs) $(website_files) $(apiassets) $(apidocs) tools/doc/
 
 $(apidoc_dirs):
 	mkdir -p $@
@@ -128,16 +120,37 @@ $(apidoc_dirs):
 out/doc/api/assets/%: doc/api_assets/% out/doc/api/assets/
 	cp $< $@
 
+out/doc/changelog.html: ChangeLog doc/changelog-head.html doc/changelog-foot.html tools/build-changelog.sh
+	bash tools/build-changelog.sh
+
+out/doc/%.html: doc/%.html
+	cat $< | sed -e 's|__VERSION__|'$(VERSION)'|g' > $@
+
 out/doc/%: doc/%
-	cp $< $@
+	cp -r $< $@
 
-out/doc/api/%.html: doc/api/%.markdown out/Release/node $(apidoc_dirs) $(apiassets) tools/doctool/doctool.js
-	out/Release/node tools/doctool/doctool.js doc/template.html $< > $@
+out/doc/api/%.json: doc/api/%.markdown
+	out/Release/node tools/doc/generate.js --format=json $< > $@
 
-out/doc/%:
+out/doc/api/%.html: doc/api/%.markdown
+	out/Release/node tools/doc/generate.js --format=html --template=doc/template.html $< > $@
+
+email.md: ChangeLog tools/email-footer.md
+	bash tools/changelog-head.sh > $@
+	cat tools/email-footer.md | sed -e 's|__VERSION__|'$(VERSION)'|g' >> $@
+
+blog.html: email.md
+	cat $< | ./node tools/doc/node_modules/.bin/marked > $@
 
 website-upload: doc
 	rsync -r out/doc/ node@nodejs.org:~/web/nodejs.org/
+	ssh node@nodejs.org '\
+    rm -f ~/web/nodejs.org/dist/latest &&\
+    ln -s $(VERSION) ~/web/nodejs.org/dist/latest &&\
+    rm -f ~/web/nodejs.org/docs/latest &&\
+    ln -s $(VERSION) ~/web/nodejs.org/docs/latest &&\
+    rm -f ~/web/nodejs.org/dist/node-latest.tar.gz &&\
+    ln -s $(VERSION)/node-$(VERSION).tar.gz ~/web/nodejs.org/dist/node-latest.tar.gz'
 
 docopen: out/doc/api/all.html
 	-google-chrome out/doc/api/all.html
@@ -148,11 +161,14 @@ docclean:
 clean:
 	$(WAF) clean
 	-find tools -name "*.pyc" | xargs rm -f
+	-rm -rf blog.html email.md
+	-rm -rf node_modules
 
 distclean: docclean
 	-find tools -name "*.pyc" | xargs rm -f
 	-rm -rf dist-osx
 	-rm -rf out/ node node_g
+	-rm -rf blog.html email.md
 
 check:
 	@tools/waf-light check
@@ -173,8 +189,19 @@ pkg: $(PKG)
 
 $(PKG):
 	-rm -rf $(PKGDIR)
-	$(WAF) configure --prefix=/usr/local --without-snapshot
-	DESTDIR=$(PKGDIR) $(WAF) install
+	# Need to remove deps between architecture changes.
+	rm -rf out/*/deps
+	$(WAF) configure --prefix=/usr/local --without-snapshot --dest-cpu=ia32
+	CFLAGS=-m32 DESTDIR=$(PKGDIR)/32 $(WAF) install
+	rm -rf out/*/deps
+	$(WAF) configure --prefix=/usr/local --without-snapshot --dest-cpu=x64
+	CFLAGS=-m64 DESTDIR=$(PKGDIR) $(WAF) install
+	lipo $(PKGDIR)/32/usr/local/bin/node \
+		$(PKGDIR)/usr/local/bin/node \
+		-output $(PKGDIR)/usr/local/bin/node-universal \
+		-create
+	mv $(PKGDIR)/usr/local/bin/node-universal $(PKGDIR)/usr/local/bin/node
+	rm -rf $(PKGDIR)/32
 	$(packagemaker) \
 		--id "org.nodejs.NodeJS-$(VERSION)" \
 		--doc tools/osx-pkg.pmdoc \
@@ -186,7 +213,7 @@ $(TARBALL): out/doc
 	cp doc/node.1 $(TARNAME)/doc/node.1
 	cp -r out/doc/api $(TARNAME)/doc/api
 	rm -rf $(TARNAME)/deps/v8/test # too big
-	rm -rf $(TARNAME)/doc/logos # too big
+	rm -rf $(TARNAME)/doc/images # too big
 	tar -cf $(TARNAME).tar $(TARNAME)
 	rm -rf $(TARNAME)
 	gzip -f -9 $(TARNAME).tar

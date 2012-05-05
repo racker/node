@@ -1,9 +1,11 @@
-## HTTPS
+# HTTPS
+
+    Stability: 3 - Stable
 
 HTTPS is the HTTP protocol over TLS/SSL. In Node this is implemented as a
 separate module.
 
-## https.Server
+## Class: https.Server
 
 This class is a subclass of `tls.Server` and emits events same as
 `http.Server`. See `http.Server` for more information.
@@ -152,7 +154,7 @@ Example:
     });
 
 
-## https.Agent
+## Class: https.Agent
 
 An Agent object for HTTPS similar to [http.Agent](http.html#http.Agent).
 See [https.request()](#https.request) for more information.

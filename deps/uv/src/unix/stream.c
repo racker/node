@@ -176,12 +176,15 @@ void uv__server_io(EV_P_ ev_io* watcher, int revents) {
     fd = uv__accept(stream->fd, (struct sockaddr*)&addr, sizeof addr);
 
     if (fd < 0) {
-      if (errno == EAGAIN) {
+      if (errno == EAGAIN || errno == EWOULDBLOCK) {
         /* No problem. */
         return;
       } else if (errno == EMFILE) {
         /* TODO special trick. unlock reserved socket, accept, close. */
         return;
+      } else if (errno == ECONNABORTED) {
+        /* ignore */
+        continue;
       } else {
         uv__set_sys_error(stream->loop, errno);
         stream->connection_cb((uv_stream_t*)stream, -1);
@@ -413,7 +416,7 @@ start:
   }
 
   if (n < 0) {
-    if (errno != EAGAIN) {
+    if (errno != EAGAIN && errno != EWOULDBLOCK) {
       /* Error */
       req->error = errno;
       stream->write_queue_size -= uv__write_req_size(req);
@@ -559,7 +562,7 @@ static void uv__read(uv_stream_t* stream) {
 
     if (nread < 0) {
       /* Error */
-      if (errno == EAGAIN) {
+      if (errno == EAGAIN || errno == EWOULDBLOCK) {
         /* Wait for the next one. */
         if (stream->flags & UV_READING) {
           ev_io_start(ev, &stream->read_watcher);
@@ -802,6 +805,8 @@ int uv__connect(uv_connect_t* req, uv_stream_t* stream, struct sockaddr* addr,
       /* If we get a ECONNREFUSED wait until the next tick to report the
        * error. Solaris wants to report immediately--other unixes want to
        * wait.
+       *
+       * XXX: do the same for ECONNABORTED?
        */
       case ECONNREFUSED:
         stream->delayed_error = errno;
@@ -966,3 +971,11 @@ int uv_read_stop(uv_stream_t* stream) {
 }
 
 
+int uv_is_readable(uv_stream_t* stream) {
+  return stream->flags & UV_READABLE;
+}
+
+
+int uv_is_writable(uv_stream_t* stream) {
+  return stream->flags & UV_WRITABLE;
+}

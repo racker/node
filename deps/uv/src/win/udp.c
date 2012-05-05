@@ -167,7 +167,6 @@ static int uv__bind(uv_udp_t* handle,
                     int addrsize,
                     unsigned int flags) {
   int r;
-  SOCKET sock;
   DWORD no = 0, yes = 1;
 
   if ((flags & UV_UDP_IPV6ONLY) && domain != AF_INET6) {
@@ -177,7 +176,7 @@ static int uv__bind(uv_udp_t* handle,
   }
 
   if (handle->socket == INVALID_SOCKET) {
-    sock = socket(domain, SOCK_DGRAM, 0);
+    SOCKET sock = socket(domain, SOCK_DGRAM, 0);
     if (sock == INVALID_SOCKET) {
       uv__set_sys_error(handle->loop, WSAGetLastError());
       return -1;
@@ -196,14 +195,14 @@ static int uv__bind(uv_udp_t* handle,
     /* TODO: how to handle errors? This may fail if there is no ipv4 stack */
     /* available, or when run on XP/2003 which have no support for dualstack */
     /* sockets. For now we're silently ignoring the error. */
-    setsockopt(sock,
+    setsockopt(handle->socket,
                IPPROTO_IPV6,
                IPV6_V6ONLY,
                (char*) &no,
                sizeof no);
   }
 
-  r = setsockopt(sock,
+  r = setsockopt(handle->socket,
                  SOL_SOCKET,
                  SO_REUSEADDR,
                  (char*) &yes,
@@ -404,11 +403,13 @@ static int uv__udp_send(uv_udp_send_t* req, uv_udp_t* handle, uv_buf_t bufs[],
     /* Request completed immediately. */
     req->queued_bytes = 0;
     handle->reqs_pending++;
+    uv_ref(loop);
     uv_insert_pending_req(loop, (uv_req_t*)req);
   } else if (UV_SUCCEEDED_WITH_IOCP(result == 0)) {
     /* Request queued by the kernel. */
     req->queued_bytes = uv_count_bufs(bufs, bufcnt);
     handle->reqs_pending++;
+    uv_ref(loop);
   } else {
     /* Send failed due to an error. */
     uv__set_sys_error(loop, WSAGetLastError());
@@ -573,6 +574,7 @@ void uv_process_udp_send_req(uv_loop_t* loop, uv_udp_t* handle,
     }
   }
 
+  uv_unref(loop);
   DECREASE_PENDING_REQ_COUNT(handle);
 }
 
