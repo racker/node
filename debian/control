@@ -16,7 +16,6 @@ Build-Depends: devscripts (>= 2.10.7~),
  scons,
  libc-ares-dev,
  binutils,
- libssl-dev,
  pkg-config,
  bash-completion,
  quilt,
@@ -35,7 +34,6 @@ Depends: nodejs (= ${binary:Version}),
  libev-dev,
  libv8-dev,
  libc-ares-dev,
- libssl-dev
 Description: Development files for Node.js
  Node.js provides an event-based server-side javascript engine.
  .
