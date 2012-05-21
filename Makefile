@@ -316,4 +316,10 @@ cpplint:
 
 lint: jslint cpplint
 
+install: all
+	out/Release/node tools/installer.js install $(DESTDIR)
+
+uninstall:
+	out/Release/node tools/installer.js uninstall
+
 .PHONY: lint cpplint jslint bench clean docopen docclean doc dist distclean check uninstall install all program staticlib dynamiclib test test-all website-upload
