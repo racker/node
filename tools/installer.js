@@ -10,8 +10,8 @@ if (cmd !== 'install' && cmd !== 'uninstall') {
 }
 
 // Use the built-in config reported by the current process
-var variables = process.config.variables,
-    node_prefix = variables.node_prefix || '/usr/local';
+var variables = null,
+    node_prefix = '/usr/';
 
 // Execution queue
 var queue = [],
@@ -119,13 +119,13 @@ if (cmd === 'install') {
   copy('out/Release/node', 'bin/node');
 
   // Install node-waf
-  if (variables.node_install_waf) {
+  if (true) {
     copy('tools/wafadmin', 'lib/node/');
     copy('tools/node-waf', 'bin/node-waf');
   }
 
   // Install npm (eventually)
-  if (variables.node_install_npm) {
+  if (true) {
     copy('deps/npm', 'lib/node_modules/npm');
     queue.push('ln -sf ../lib/node_modules/npm/bin/npm-cli.js ' +
                path.join(dest_dir, node_prefix, 'bin/npm'));
