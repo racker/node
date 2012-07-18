@@ -555,6 +555,8 @@ Files: AUTHORS
  debian/control
  debian/control.in
  debian/gbp.conf
+ debian/node-waf.1
+ debian/node-waf.bash-completion
  debian/nodejs-dbg.dirs
  debian/nodejs-dev.bash-completion
  debian/nodejs-dev.dirs
