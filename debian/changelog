@@ -1,3 +1,9 @@
+nodejs (0.8.2-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Tomaz Muraus <tomaz.muraus@rackspace.com>  Fri, 18 July 2012 06:57:10 +0100
+
 nodejs (0.6.17-1) unstable; urgency=low
 
   * New upstream release
