@@ -555,8 +555,6 @@ Files: AUTHORS
  debian/control
  debian/control.in
  debian/gbp.conf
- debian/node-waf.1
- debian/node-waf.bash-completion
  debian/nodejs-dbg.dirs
  debian/nodejs-dev.bash-completion
  debian/nodejs-dev.dirs
@@ -889,7 +887,6 @@ Files: AUTHORS
  tools/closure_linter/closure_linter/common/__init__.py
  tools/closure_linter/setup.cfg
  tools/doctool/doctool.js
- tools/node-waf
  tools/nodejs.pc.in
  tools/osx-dist.sh
  tools/osx-pkg-dmg-create.sh
